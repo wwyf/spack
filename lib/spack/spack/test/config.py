@@ -412,6 +412,7 @@ def test_substitute_config_variables(mock_low_high_config, monkeypatch):
         os.path.join('foo', '$target_family', 'bar')
     ) == os.path.abspath(os.path.join('foo', platform.machine(), 'bar'))
 
+
 packages_merge_low = {
     'packages': {
         'foo': {

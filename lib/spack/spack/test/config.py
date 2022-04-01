@@ -6,7 +6,6 @@
 import collections
 import getpass
 import os
-import platform
 import sys
 import tempfile
 
@@ -413,7 +412,6 @@ def test_substitute_config_variables(mock_low_high_config, monkeypatch):
     assert spack_path.canonicalize_path(
         os.path.join('foo', '$target_family', 'bar')
     ) == os.path.abspath(os.path.join('foo', host_target_family, 'bar'))
-
 
 
 packages_merge_low = {

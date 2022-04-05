@@ -1105,10 +1105,22 @@ class SpackSolverSetup(object):
         if not preferred_targets:
             return
 
-        preferred = preferred_targets[0]
-        self.gen.fact(fn.package_target_weight(
-            str(preferred.architecture.target), pkg_name, -30
-        ))
+        for i, preferred in enumerate(preferred_targets):
+            self.gen.fact(fn.package_target_weight(
+                str(preferred.architecture.target), pkg_name, i
+            ))
+
+    def len_preferred_targets(self, pkg_name):
+        key_fn = spack.package_prefs.PackagePrefs(pkg_name, 'target')
+
+        if not self.target_specs_cache:
+            self.target_specs_cache = [
+                spack.spec.Spec('target={0}'.format(target_name))
+                for target_name in archspec.cpu.TARGETS
+            ]
+
+        target_specs = self.target_specs_cache
+        return len([x for x in target_specs if key_fn(x) < 0])
 
     def flag_defaults(self):
         self.gen.h2("Compiler flag defaults")
@@ -1395,7 +1407,7 @@ class SpackSolverSetup(object):
         for i, os_name in enumerate(ordered_oses):
             self.gen.fact(fn.os(os_name, i))
 
-    def target_defaults(self, specs):
+    def target_defaults(self, specs, pkgs):
         """Add facts about targets and target compatibility."""
         self.gen.h2('Default target')
 
@@ -1462,7 +1474,9 @@ class SpackSolverSetup(object):
             if target not in compatible_targets:
                 compatible_targets.append(target)
 
-        i = 0
+        max_preferred_targets = max(self.len_preferred_targets(pkg) for pkg in pkgs)
+
+        i = max_preferred_targets + 30
         for target in compatible_targets:
             self.gen.fact(fn.target(target.name))
             self.gen.fact(fn.target_family(target.name, target.family.name))
@@ -1743,7 +1757,7 @@ class SpackSolverSetup(object):
         # architecture defaults
         self.platform_defaults()
         self.os_defaults(specs)
-        self.target_defaults(specs)
+        self.target_defaults(specs, pkgs)
 
         self.virtual_providers()
         self.provider_defaults()

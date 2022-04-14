@@ -283,6 +283,12 @@ class TestConcretize(object):
         assert set(client.compiler_flags['fflags']) == set(['-O0', '-g'])
         assert not set(cmake.compiler_flags['fflags'])
 
+    def test_mixing_compilers_only_affects_subdag(self):
+        spack.config.set('packages:all:compiler', ['clang', 'gcc'])
+        spec = Spec('dt-diamond%gcc ^dt-diamond-bottom%clang').concretized()
+        for dep in spec.traverse():
+            assert ('%clang' in dep) == (dep.name == 'dt-diamond-bottom')
+
     def test_architecture_inheritance(self):
         """test_architecture_inheritance is likely to fail with an
         UnavailableCompilerVersionError if the architecture is concretized

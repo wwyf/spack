@@ -509,7 +509,7 @@ class PyclingoDriver(object):
         atom = self.backend.add_atom(symbol)
 
         assumption_names = [
-            'conflict', 'condition', 'error', 'variant',
+            'conflict', 'condition', 'error', 'variant', 'dependency',
             'rule', 'deprecated', 'node_flag_set',
             'node_compiler_version_set', 'node_compiler_set', 'variant_set',
             'node_target_set', 'node_os_set', 'node_platform_set',
@@ -1012,14 +1012,27 @@ class SpackSolverSetup(object):
                 if not deptypes:
                     continue
 
-                condition_id = self.condition(cond, dep.spec, pkg.name)
-                self.gen.fact(fn.dependency_condition(
-                    condition_id, pkg.name, dep.spec.name
-                ))
+                if cond == spack.spec.Spec():
+                    for clause in self.spec_clauses(dep.spec):
+                        self.gen.fact(clause)
+                        if clause.name == 'variant_set':
+                            self.gen.fact(fn.variant_default_value_from_cli(
+                                *clause.args
+                            ))
 
-                for t in sorted(deptypes):
-                    # there is a declared dependency of type t
-                    self.gen.fact(fn.dependency_type(condition_id, t))
+                    for t in sorted(deptypes):
+                        self.gen.fact(fn.dependency(pkg.name, dep.spec.name, t))
+
+                else:
+                    msg = '%s depends on %s when %s' % (pkg.name, dep.spec.name, cond)
+                    condition_id = self.condition(cond, dep.spec, pkg.name, msg)
+                    self.gen.fact(fn.dependency_condition(
+                        condition_id, pkg.name, dep.spec.name
+                    ))
+
+                    for t in sorted(deptypes):
+                        # there is a declared dependency of type t
+                        self.gen.fact(fn.dependency_type(condition_id, t))
 
                 self.gen.newline()
 
